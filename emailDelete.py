@@ -2,8 +2,6 @@ from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-
 
 from time import sleep
 
@@ -42,23 +40,16 @@ while True:
         continue
 
     sleep(.5)
-    # input("Press Enter after you've selected the checkbox")
 
     x = driver.find_element(By.XPATH, "/html/body/div/div[2]/div[2]/div[1]/ul/li[13]")
     x.click()
 
     sleep(.5)
-    # input("Press Enter after you've selected the delete button")
 
     x = driver.find_element(By.XPATH, "/html/body/div[2]/div[3]/div/button[2]")
     x.click()
 
-    # page -= 1;
-    # Wait until the new page number a element is visible
-    # WebDriverWait(driver, 100).until(EC.visibility_of_element_located((By.LINK_TEXT, str(page-5))))
-    # print("Found " + str(page-5))
     sleep(150)
-    # input("Press Enter after you've confirmed the deletion")
 
 
 print("success")

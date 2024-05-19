@@ -1,4 +1,3 @@
-from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -8,8 +7,6 @@ from time import sleep
 URL = "https://webmail.spectrum.net/mail"
 
 response = requests.get(URL)
-
-soup = BeautifulSoup(response.content, 'html.parser')
 
 driver = webdriver.Chrome()
 driver.get(URL)

@@ -1,7 +1,10 @@
-from imapTest import do_env
-from dotenv import load_dotenv
+from imapTest import *
+IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD = load_env_variables()
 
-load_dotenv()
+# mail = connect_to_mailbox(IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD)
+ssl_connection = connect_imap_ssl(IMAP_SERVER, 993)
+if ssl_connection:
+    ssl_connection.logout()
+
 
 print("Hello from Docker`s Python container!")
-do_env()

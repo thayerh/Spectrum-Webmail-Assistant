@@ -1,1 +1,8 @@
 python-dotenv
+kagglehub
+pandas
+numpy
+nltk
+scikit-learn
+wordcloud
+ipykernel

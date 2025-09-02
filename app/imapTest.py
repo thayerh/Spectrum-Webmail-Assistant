@@ -4,6 +4,20 @@ from email.header import decode_header
 import os
 from dotenv import load_dotenv
 import ssl
+from bs4 import BeautifulSoup
+import email.message
+from nltk.stem.porter import PorterStemmer
+import string
+import nltk
+from nltk.corpus import stopwords    # For stopwords
+
+
+# Downloading NLTK data
+nltk.download('stopwords')   # Downloading stopwords data
+nltk.download('punkt_tab')       # Downloading tokenizer data
+
+ps = PorterStemmer()
+
 
 def load_env_variables():
     """Load environment variables for IMAP connection."""
@@ -14,14 +28,6 @@ def load_env_variables():
     print(IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD)
     return IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD
 
-def connect_to_mailbox(IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD):
-    """Connect and login to the IMAP server."""
-    mySsl = ssl.create_default_context()
-    mail = imaplib.IMAP4_SSL(host=IMAP_SERVER, port=993, ssl_context=mySsl)
-    exit()
-    mail.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-    return mail
-
 def select_mailbox(mail, mailbox="INBOX"):
     """Select mailbox in readonly mode."""
     mail.select(mailbox, readonly=True)
@@ -31,9 +37,15 @@ def search_unseen_emails(mail):
     status, messages = mail.search(None, 'UNSEEN')
     return status, messages
 
-def fetch_and_print_emails(mail, email_ids):
-    """Fetch and print details of emails by IDs."""
-    for email_id in email_ids:
+def search_all_emails(mail, date_since="01-Jan-2025", date_before="31-Dec-2025"):
+    """Search for all emails since a specific date."""
+    status, messages = mail.search(None, f'SINCE {date_since} BEFORE {date_before}')
+    return status, messages
+
+def fetch_emails(mail, email_ids, limit=8):
+    """Fetch emails by IDs."""
+    msgs = []
+    for email_id in email_ids[::-1][:limit]:  # Process in reverse order (newest first)
         res, msg_data = mail.fetch(email_id, "(RFC822)")
         if res != "OK":
             print(f"Failed to fetch email ID {email_id}")
@@ -41,7 +53,11 @@ def fetch_and_print_emails(mail, email_ids):
 
         raw_email = msg_data[0][1]
         msg = email.message_from_bytes(raw_email)
+        msgs.append(msg)
+    return msgs
 
+def process_email(msg: email.message.Message):
+    try:
         subject, encoding = decode_header(msg["Subject"])[0]
         if isinstance(subject, bytes):
             subject = subject.decode(encoding or "utf-8")
@@ -49,44 +65,76 @@ def fetch_and_print_emails(mail, email_ids):
         from_ = msg.get("From")
         date_ = msg.get("Date")
 
-        print(f"From: {from_}")
-        print(f"Subject: {subject}")
-        print(f"Date: {date_}")
-        print("-" * 50)
+        # Get email body
+        body = ""
+        if msg.is_multipart():
+            for part in msg.walk():
+                content_type = part.get_content_type()
 
+                if content_type == "text/plain":
+                    body += part.get_payload(decode=True).decode()
+                elif content_type == "multipart/alternative":
+                    for subpart in part.get_payload():
+                        if subpart.get_content_type() == "text/plain":
+                            body += subpart.get_payload(decode=True).decode()
+                elif content_type == "text/html":
+                    html_content = part.get_payload(decode=True).decode()
+                    soup = BeautifulSoup(html_content, "html.parser")
+                    body += soup.get_text()
+        else:
+            if msg.get_content_type() == "text/plain":
+                body = msg.get_payload(decode=True).decode()
+            elif msg.get_content_type() == "text/html":
+                html_content = msg.get_payload(decode=True).decode()
+                soup = BeautifulSoup(html_content, "html.parser")
+                body = soup.get_text()
 
-import ssl
-import socket
+        # Remove excessive whitespace and newlines
+        body = ' '.join(body.split())
+        # Remove urls
+        body = ' '.join(word for word in body.split() if not word.startswith('http'))
+        body = ' '.join(word for word in body.split() if not word.startswith('<http'))
+        # Process email for text analysis
+        transformed_subject = transform_text(subject)
+        transformed_body = transform_text(body)
+        email_text = f"Subject: {transformed_subject}\n{transformed_body}"
 
-def connect_ssl(hostname, port):
-    # Create a regular socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
-    # Wrap it with SSL
-    context = ssl.create_default_context()
-    ssl_sock = context.wrap_socket(sock, server_hostname=hostname)
-    
-    try:
-        # Connect to the server
-        ssl_sock.connect((hostname, port))
-        
-        # Print connection info
-        print(f"Connected to {hostname}:{port}")
-        print(f"SSL version: {ssl_sock.version()}")
-        print(f"Cipher: {ssl_sock.cipher()}")
-        
-        # Get certificate info
-        cert = ssl_sock.getpeercert()
-        print(f"Certificate subject: {cert.get('subject')}")
-        print(f"Certificate issuer: {cert.get('issuer')}")
-        
-        return ssl_sock
-        
+        return email_text, from_, subject, date_, body
     except Exception as e:
-        print(f"Connection failed: {e}")
-        ssl_sock.close()
-        return None
+        print(f"Error processing email: {e}")
+        return "", "", "", "", ""
+
+# Lowercase transformation and text preprocessing function
+def transform_text(text):
+    # Transform the text to lowercase
+    text = text.lower()
     
+    # Tokenization using NLTK
+    text = nltk.word_tokenize(text)
+    
+    # Removing special characters
+    y = []
+    for i in text:
+        if i.isalnum():
+            y.append(i)
+            
+    # Removing stop words and punctuation
+    text = y[:]
+    y.clear()
+    
+    # Loop through the tokens and remove stopwords and punctuation
+    for i in text:
+        if i not in stopwords.words('english') and i not in string.punctuation:
+            y.append(i)
+        
+    # Stemming using Porter Stemmer
+    text = y[:]
+    y.clear()
+    for i in text:
+        y.append(ps.stem(i))
+    
+    # Join the processed tokens back into a single string
+    return " ".join(y)
 
 def connect_imap_ssl(hostname, port=993) -> imaplib.IMAP4_SSL:
     try:
@@ -117,3 +165,11 @@ def connect_imap_ssl(hostname, port=993) -> imaplib.IMAP4_SSL:
     except Exception as e:
         print(f"IMAP connection failed: {e}")
         return None
+
+def login_to_mailbox(mail, email_account, email_password):
+    """Login to the mailbox."""
+    try:
+        mail.login(email_account, email_password)
+        print("Login successful")
+    except imaplib.IMAP4.error as e:
+        print(f"Login failed: {e}")

@@ -3,8 +3,6 @@ IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD = load_env_variables()
 
 from customData import *
 
-prompt_classification()
-exit()
 
 # mail = connect_to_mailbox(IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD)
 ssl_connection = connect_imap_ssl(IMAP_SERVER, 993)

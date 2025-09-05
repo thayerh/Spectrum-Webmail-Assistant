@@ -15,7 +15,6 @@ def load_env_variables():
     IMAP_SERVER = os.getenv("IMAP_SERVER")
     EMAIL_ACCOUNT = os.getenv("EMAIL_ACCOUNT")
     EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-    print(IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD)
     return IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD
 
 def select_mailbox(mail, mailbox="INBOX"):

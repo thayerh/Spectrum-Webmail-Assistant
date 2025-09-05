@@ -3,7 +3,7 @@ import email
 from email.header import decode_header
 from bs4 import BeautifulSoup
 import csv
-from imapTest import connect_imap_ssl, login_to_mailbox, select_mailbox, search_all_emails, fetch_emails, process_email, load_env_variables
+from imapUtils import connect_imap_ssl, login_to_mailbox, select_mailbox, search_all_emails, fetch_emails, process_email, load_env_variables
 
 FILEPATH = 'model/data/personal_spam_ham.csv'
 

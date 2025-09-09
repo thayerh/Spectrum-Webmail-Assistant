@@ -31,6 +31,11 @@ def search_all_emails(mail, date_since="01-Jan-2025", date_before="31-Dec-2025")
     status, messages = mail.search(None, f'SINCE {date_since} BEFORE {date_before}')
     return status, messages
 
+def search_by_criteria(mail, criteria):
+    """Search emails by specific criteria."""
+    status, messages = mail.search(None, criteria)
+    return status, messages
+
 def fetch_emails(mail, email_ids, limit=8):
     """Fetch emails by IDs."""
     msgs = []
@@ -61,20 +66,20 @@ def process_email(msg: email.message.Message):
                 content_type = part.get_content_type()
 
                 if content_type == "text/plain":
-                    body += part.get_payload(decode=True).decode()
+                    body += part.get_payload(decode=True).decode('utf-8', errors='replace')
                 elif content_type == "multipart/alternative":
                     for subpart in part.get_payload():
                         if subpart.get_content_type() == "text/plain":
-                            body += subpart.get_payload(decode=True).decode()
+                            body += subpart.get_payload(decode=True).decode('utf-8', errors='replace')
                 elif content_type == "text/html":
-                    html_content = part.get_payload(decode=True).decode()
+                    html_content = part.get_payload(decode=True).decode('utf-8', errors='replace')
                     soup = BeautifulSoup(html_content, "html.parser")
                     body += soup.get_text()
         else:
             if msg.get_content_type() == "text/plain":
-                body = msg.get_payload(decode=True).decode()
+                body = msg.get_payload(decode=True).decode('utf-8', errors='replace')
             elif msg.get_content_type() == "text/html":
-                html_content = msg.get_payload(decode=True).decode()
+                html_content = msg.get_payload(decode=True).decode('utf-8', errors='replace')
                 soup = BeautifulSoup(html_content, "html.parser")
                 body = soup.get_text()
 

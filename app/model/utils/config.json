@@ -1,0 +1,9 @@
+{
+    "state-file": "state.json",
+    "whitelist": [
+        "Carolina Meadows",
+        "Carolina Club",
+        "Carolina",
+        "Litchfield"
+    ]
+}

@@ -17,7 +17,7 @@ def load_env_variables():
     EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
     return IMAP_SERVER, EMAIL_ACCOUNT, EMAIL_PASSWORD
 
-def select_mailbox(mail, mailbox="INBOX"):
+def select_mailbox(mail: imaplib.IMAP4_SSL, mailbox="INBOX"):
     """Select mailbox in readonly mode."""
     mail.select(mailbox, readonly=True)
 
@@ -26,28 +26,28 @@ def search_unseen_emails(mail):
     status, messages = mail.search(None, 'UNSEEN')
     return status, messages
 
-def search_all_emails(mail, date_since="01-Jan-2025", date_before="31-Dec-2025"):
+def search_all_emails(mail: imaplib.IMAP4_SSL, date_since="01-Jan-2025", date_before="31-Dec-2025"):
     """Search for all emails since a specific date."""
     status, messages = mail.search(None, f'SINCE {date_since} BEFORE {date_before}')
     return status, messages
 
-def search_by_criteria(mail, criteria):
+def search_by_criteria(mail: imaplib.IMAP4_SSL, criteria):
     """Search emails by specific criteria."""
-    status, messages = mail.search(None, criteria)
+    status, messages = mail.uid('SEARCH', None, criteria)
     return status, messages
 
-def fetch_emails(mail, email_ids, limit=8):
+def fetch_emails(mail: imaplib.IMAP4_SSL, email_ids, limit=8):
     """Fetch emails by IDs."""
     msgs = []
-    for email_id in email_ids[::-1][:limit]:  # Process in reverse order (newest first)
-        res, msg_data = mail.fetch(email_id, "(RFC822)")
+    for email_id in email_ids[:limit]:  # Process in reverse order (newest first)
+        res, msg_data = mail.uid("FETCH", email_id, "(RFC822)")
         if res != "OK":
             print(f"Failed to fetch email ID {email_id}")
             continue
 
         raw_email = msg_data[0][1]
         msg = email.message_from_bytes(raw_email)
-        msgs.append(msg)
+        msgs.append((email_id, msg))
     return msgs
 
 def process_email(msg: email.message.Message):
@@ -128,10 +128,20 @@ def connect_imap_ssl(hostname, port=993) -> imaplib.IMAP4_SSL:
         print(f"IMAP connection failed: {e}")
         return None
 
-def login_to_mailbox(mail, email_account, email_password):
+def login_to_mailbox(mail: imaplib.IMAP4_SSL, email_account, email_password):
     """Login to the mailbox."""
     try:
         mail.login(email_account, email_password)
         print("Login successful")
     except imaplib.IMAP4.error as e:
         print(f"Login failed: {e}")
+
+def move_to_spam(mail: imaplib.IMAP4_SSL, email_uid, folder="Junkmail"):
+    """Move an email to the server's spam/junk folder using UID."""
+    try:
+        mail.uid('COPY', email_uid, folder)
+        mail.select("INBOX")
+        mail.uid('STORE', email_uid, '+FLAGS', '(\\Deleted)')
+        mail.expunge()
+    except Exception as e:
+        raise e

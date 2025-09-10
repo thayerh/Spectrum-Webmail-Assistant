@@ -13,7 +13,6 @@ Automate email management and spam filtering for Spectrum Webmail using Python, 
 - [Docker Support](#docker-support)
 - [Customization](#customization)
 - [Contributing](#contributing)
-- [License](#license)
 
 ---
 
@@ -128,7 +127,3 @@ README.md           # Project documentation
 ## Contributing
 
 Pull requests and suggestions are welcome! Please open an issue for major changes.
-
-## License
-
-MIT License. See `LICENSE` for details.
